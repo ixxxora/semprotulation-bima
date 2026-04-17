@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <title>For Bimbim</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d0d0d;
+            --text-color: #e0e0e0;
+            --accent-color: #3498db;
+            --danger-color: #e74c3c;
+            --coffee-color: #d2b48c;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Quicksand', sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+            text-align: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #content-wrapper {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px 15px;
+            z-index: 10;
+        }
+
+        .foto-bima {
+            width: 35vw;
+            height: 35vw;
+            max-width: 160px;
+            max-height: 160px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--accent-color);
+            margin-bottom: 25px;
+            display: none;
+            margin-left: auto; margin-right: auto;
+            animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        #typewriter-text {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            min-height: 220px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .from-tag {
+            display: block;
+            font-size: 1.5rem;
+            color: var(--danger-color);
+            font-family: 'Caveat', cursive;
+            margin-bottom: 2px;
+            text-transform: lowercase;
+            opacity: 0.8;
+        }
+
+        .to-tag {
+            display: block;
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: var(--danger-color);
+            font-family: 'Caveat', cursive;
+            margin-bottom: 15px;
+            text-transform: lowercase;
+        }
+
+        .cursive { 
+            font-family: 'Caveat', cursive; 
+            font-size: 2.8rem;
+            color: var(--danger-color); 
+            text-transform: lowercase;
+        }
+
+        .cafe-element {
+            position: fixed;
+            color: var(--coffee-color);
+            opacity: 0.8;
+            z-index: 1;
+            pointer-events: none;
+            animation: floatCafe 4s linear forwards;
+        }
+
+        @keyframes floatCafe {
+            0% { transform: translateY(0vh) scale(0) rotate(0deg); opacity: 0.8; }
+            10% { scale: 1; }
+            100% { transform: translateY(-110vh) scale(1.3) rotate(360deg); opacity: 0; }
+        }
+
+        #start-screen {
+            position: fixed; inset: 0;
+            background: var(--bg-color);
+            z-index: 100;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            padding: 20px;
+        }
+
+        .question { font-size: 1.3rem; margin-bottom: 30px; }
+        .button-group { display: flex; gap: 20px; }
+        .btn-choice {
+            background: transparent; color: white;
+            border: 1px solid white; padding: 12px 0;
+            border-radius: 50px; font-size: 1rem; cursor: pointer;
+            transition: 0.3s; width: 120px; text-align: center;
+        }
+        .btn-choice:hover { background: white; color: black; }
+
+        #hint {
+            position: fixed; bottom: 30px; left: 0; right: 0;
+            font-size: 0.65rem; letter-spacing: 2px; opacity: 0.3;
+        }
+
+        .vol-alert {
+            font-family: 'Caveat', cursive;
+            font-size: 2.2rem;
+            color: var(--danger-color);
+            text-transform: lowercase;
+            animation: pulse 1s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body onclick="handleClick()">
+
+    <div id="start-screen">
+        <div id="initial-content">
+            <p class="question">Wanna hear something special?</p>
+            <div class="button-group">
+                <button class="btn-choice" onclick="initiate(true, event)">Yes, please!</button>
+                <button class="btn-choice" onclick="initiate(false, event)">No, thanks.</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="content-wrapper">
+        <img id="main-photo" src="bima.jpeg" class="foto-bima" alt="bimbim">
+        <div id="typewriter-text"></div>
+        <div id="hint">TAP TO SKIP/CONTINUE</div>
+    </div>
+
+    <audio id="bgm" src="tavoryn.mp3" loop preload="auto"></audio>
+
+    <script>
+        let currentStep = 0;
+        let isTyping = false;
+        let typingTimer;
+        let fullTextHtml = "";
+        let cafeInterval;
+        let isStarted = false;
+        
+        const textElement = document.getElementById('typewriter-text');
+        const photoElement = document.getElementById('main-photo');
+        const bgm = document.getElementById('bgm');
+        const hint = document.getElementById('hint');
+        const startScreen = document.getElementById('start-screen');
+
+        const scripts = [
+            { 
+                text: "<span class='from-tag'>from: customers who love your lattes</span><span class='to-tag'>to: bimbim</span>\nTBH, I really hate you.", 
+                showPhoto: false, animateCafe: false
+            },
+            { 
+                text: "But, This is your <span class='cursive'>semprotulation</span>", 
+                showPhoto: true, animateCafe: true 
+            },
+            { 
+                text: "Bimbim, if you know this is my first website, why is it that for a stupid guy like you, it's my first website? Damn!!!!", 
+                showPhoto: false, animateCafe: false
+            },
+            { 
+                text: "But thank you for the 6H at Renjana last week.", 
+                showPhoto: false, animateCafe: false
+            },
+            { 
+                text: "And about that song, 'Tavoryn' I love that song! But then why did I feel the bitter meaning of that song the next day?\nLMFAO!", 
+                showPhoto: false, animateCafe: false
+            },
+            { text: "But, if u know....", showPhoto: false, animateCafe: false },
+            { text: "Thank you for helping me", showPhoto: false, animateCafe: false },
+            { text: "Now I realize what I need to do", showPhoto: false, animateCafe: false },
+            { text: "sorry ya mek, kalo hadiahnya telat", showPhoto: false, animateCafe: false },
+            { text: "But....", showPhoto: false, animateCafe: false },
+            { text: "<span class='cursive'>Selamat sempro ya mekkk!!!</span>", showPhoto: true, animateCafe: true },
+            { text: "<span class='cursive' style='font-size: 2.2rem;'>semangat penelitiannya mekkk!!!</span>", showPhoto: false, animateCafe: false }
+        ];
+
+        function initiate(playMusic, e) {
+            e.stopPropagation();
+            if (playMusic) {
+                bgm.play().catch(() => {});
+                document.getElementById('initial-content').innerHTML = "<p class='vol-alert'>turn up your volume...</p>";
+                setTimeout(() => {
+                    startScreen.style.display = 'none';
+                    isStarted = true;
+                    startNewMessage();
+                }, 2500);
+            } else {
+                startScreen.style.display = 'none';
+                isStarted = true;
+                startNewMessage();
+            }
+        }
+
+        function handleClick() {
+            if (!isStarted) return;
+            if (isTyping) {
+                clearTimeout(typingTimer);
+                textElement.innerHTML = fullTextHtml;
+                isTyping = false;
+            } else {
+                if (currentStep < scripts.length) {
+                    startNewMessage();
+                } else {
+                    currentStep = 0;
+                    startNewMessage();
+                }
+            }
+        }
+
+        function startNewMessage() {
+            const data = scripts[currentStep];
+            fullTextHtml = data.text;
+            textElement.innerHTML = "";
+            photoElement.style.display = data.showPhoto ? 'block' : 'none';
+            
+            clearInterval(cafeInterval);
+            if (data.animateCafe) {
+                cafeInterval = setInterval(createCafeElement, 250);
+            }
+            
+            currentStep++;
+            hint.innerHTML = (currentStep === scripts.length) ? "TAP TO RESTART FROM BEGINNING" : "TAP TO SKIP/CONTINUE";
+            typeWriter(fullTextHtml, 0);
+        }
+
+        function createCafeElement() {
+            const cafeEl = document.createElement('div');
+            cafeEl.classList.add('cafe-element');
+            const cafeSimbols = ['&#9832;', '&#129381;', '&#9749;'];
+            cafeEl.innerHTML = cafeSimbols[Math.floor(Math.random() * cafeSimbols.length)];
+            cafeEl.style.left = Math.random() * 100 + 'vw';
+            cafeEl.style.fontSize = Math.random() * 10 + 18 + 'px';
+            cafeEl.style.animationDuration = Math.random() * 2 + 3 + 's';
+            document.body.appendChild(cafeEl);
+            setTimeout(() => { cafeEl.remove(); }, 4000); 
+        }
+
+        function typeWriter(html, index) {
+            isTyping = true;
+            if (index < html.length) {
+                if (html.charAt(index) === "<") {
+                    let tagEnd = html.indexOf(">", index);
+                    textElement.innerHTML = html.substring(0, tagEnd + 1);
+                    typingTimer = setTimeout(() => typeWriter(html, tagEnd + 1), 10);
+                } else {
+                    textElement.innerHTML = html.substring(0, index + 1);
+                    typingTimer = setTimeout(() => typeWriter(html, index + 1), 45);
+                }
+            } else {
+                isTyping = false;
+            }
+        }
+    </script>
+</body>
+</html>
